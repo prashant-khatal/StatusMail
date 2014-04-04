@@ -32,12 +32,12 @@ class Status{
 		$status->setDescription($postData->description);
 		$status->setUser($user);
 		$status->setStatus($postData->status);
-		$status->setTask($jiraTicket);		
+		$status->setTask($jiraTicket);
 		$this->_em->persist($status);
 		$this->_em->flush();
 		return array('controller'=>'status','action'=>'report');
 	}
-	
+
 	private function getJiraTicket($ticketNum, $postData){
 		$jiraTicket = $this->_em->getRepository('Management\Model\Entity\Task')->findOneByJiraTicketId($ticketNum);
 		if (!$jiraTicket){
@@ -47,7 +47,7 @@ class Status{
 		}
 		return $jiraTicket;
 	}
-	public function getUserReportData($userId, $fromDate=null, $toDate=null){
+	public function getUserReportData($userId, $fromDate=null, $toDate=null, $statusId=null){
 		$qb = $this->_em->createQueryBuilder();
 		$qb->add('select', 's,t,u')
 		->add('from', 'Management\Model\Entity\Status s')
@@ -59,6 +59,10 @@ class Status{
 		->setParameter('from', $fromDate)
 		->setParameter('to', $toDate)
 		->orderBy('s.dateAdded');
+		if(!is_null($statusId)){
+			$qb->andWhere("s.statusId = :statusId")
+				->setParameter('statusId', $statusId);
+		}
 		return $qb->getQuery()->getArrayResult();
 	}
 
@@ -76,6 +80,18 @@ class Status{
 		$qb->add('select', 'u')
 		   ->add('from', 'Management\Model\Entity\User u');
 		return $qb->getQuery()->getArrayResult();
+	}
+
+	public function deleteStatus($statusId){
+		$qb = $this->_em->createQueryBuilder();
+		$qb->delete('Management\Model\Entity\Status', 's')
+		   ->andWhere($qb->expr()->eq('s.statusId', ':statusId'))
+		   ->setParameter(':statusId', $statusId);
+		return $qb->getQuery()->execute();
+	}
+
+	public function getStatusById($statusId){
+		return $this->_em->getRepository('Management\Model\Entity\Status')->findOneByStatusId($statusId);
 	}
 
 }

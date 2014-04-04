@@ -11,19 +11,26 @@ if (! empty ( $reportObj ))
 {
 	foreach ( $reportObj as $reportDate => $reports )
 	{
-		?> 			
-			<h4><?php echo date('jS F Y', strtotime($reportDate)) ?></h4>
+		?>
+
+				<div style="float:left;width:100%"><h4><?php echo date('jS F Y', strtotime($reportDate)) ?></h4></div>
 		<?php
 			$reportNo = 1;
-			foreach ( $reports->report as $report ) 
+			foreach ( $reports->report as $statusId => $report )
 			{
-		?>
-				<?php echo $reportNo ?>. <a href="http://jira.theorchard.com/browse/<?php echo $report->jiraTicketId ?>"target="_blank"><?php echo $report->jiraTicketId ?></a> : 
+		?>	<div><div style="float:left;width:60%">
+				<?php echo $reportNo ?>. <a href="http://jira.theorchard.com/browse/<?php echo $report->jiraTicketId ?>"target="_blank"><?php echo $report->jiraTicketId ?></a> :
 				<?php echo $report->title?>
 				<span class="status_cont"><?php echo $report->status ?></span>
 				<div class="desc_cont">
 		                <?php echo $report->description?>
-		    		</div>
+		    	</div>
+		    </div>
+		    <div style="float:left;width:40%">
+		    	<a href="/management/status/index?statusId=<?php echo $statusId;?>">Edit</a>
+		    	<a href="/management/status/deletestatus?statusId=<?php echo $statusId;?>">Delete</a>
+		    </div>
+		    </div>
 			<?php
 			$reportNo++;
 		}

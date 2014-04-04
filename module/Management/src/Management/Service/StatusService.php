@@ -18,14 +18,14 @@ class StatusService extends Common{
 		parent::__construct($em);
 	}
 
-	public function getUserReport($userId, $fromDate=null, $toDate=null){
+	public function getUserReport($userId, $fromDate=null, $toDate=null, $statusId=null){
 		if (!$fromDate)
 			$fromDate = date('Y-m-d', strtotime("-30 days",strtotime(date('Y-m-d'))));
 		if (!$toDate)
 			$toDate = date('Y-m-d', strtotime("+1 days",strtotime(date('Y-m-d'))));
 
 		$modelStatus = new Status($this->_em, $this->_session);
-		$reports = $modelStatus->getUserReportData($userId, $fromDate, $toDate);
+		$reports = $modelStatus->getUserReportData($userId, $fromDate, $toDate, $statusId);
 		$reports = json_decode(json_encode($reports, true));
 		$reportArr = array();
 		foreach ($reports as $report){
@@ -54,5 +54,23 @@ class StatusService extends Common{
 		$modelStatus = new Status($this->_em, $this->_session);
 		$response = $modelStatus->saveStatus($postData);
 		return $response;
+	}
+	public function deleteStatus($statusId){
+		$modelStatus = new Status($this->_em, $this->_session);
+		$response = $modelStatus->deleteStatus($statusId);
+	}
+
+	public function editStatus($data){
+		$adminService = new AdminService($this->_em);
+		$teamAbbrArr = $adminService->getTeamDropdown();
+		$modelStatus = new Status($this->_em, $this->_session);
+		$status = $modelStatus->getStatusById($data['statusId']);
+		$status->setStatus($data['status']);
+		$status->setDescription($data['description']);
+		$status->getTask()->setTitle($data['title']);
+		$status->getTask()->setJiraTicketId($teamAbbrArr[$data['ticketType']]."-".$data['ticketNumber']);
+		$this->_em->persist($status);
+		$this->_em->flush();
+// 		foreach($status->)
 	}
 }

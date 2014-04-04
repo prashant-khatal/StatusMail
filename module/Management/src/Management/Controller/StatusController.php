@@ -8,7 +8,7 @@
 /**
  * Description of StatusController
  *
- * @author Narendra
+ * @author Prashant
  */
 
 namespace Management\Controller;
@@ -19,6 +19,7 @@ use Zend\Session\Container;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
 use ZendTest\View\Helper\Placeholder\StandaloneContainerTest;
+use Management\Service\AdminService;
 
 class StatusController extends BaseController{
 
@@ -29,7 +30,12 @@ class StatusController extends BaseController{
     }
 
     public function indexAction(){
+    	$statusId = $this->getRequest()->getQuery('statusId',null);
+    	if(is_null($statusId))
+    		$statusId = (is_null($statusId)) ? $this->getRequest()->getPost("statusId",null) : null;
+    	$this->getServiceLocator()->get('viewhelpermanager')->get('HeadScript')->appendFile('/js/ckeditor/ckeditor.js');
         $statusForm = new StatusForm($this->getEntityManager());
+        $statusForm->add(array('name' => 'statusId','type' => 'Hidden','attributes' =>  array('id' => 'statusId','value'=>$statusId)));
         if ($this->getRequest()->isPost()){
         	$post = $this->getRequest()->getPost();
         	$statusForm->setData($post);
@@ -38,8 +44,34 @@ class StatusController extends BaseController{
         		if($post['submit'] == 'Save'){
         			$response = $serviceStatus->saveStatus($post);
         			$this->redirectTo($response);
+        		}elseif($post['submit'] == 'Edit'){
+        			$data = $serviceStatus->editStatus($post);
+        			$this->redirect()->toUrl('/management/status/report');
+
         		}
         	}
+        }elseif(!is_null($statusId)){
+        	$elements = $statusForm->getElements();
+        	$elements["submit"]->setAttribute("value","Edit");
+        	$adminService = new AdminService($this->getEntityManager());
+        	$teamAbbrArr = $adminService->getTeamDropdown();	//get Team abbrevations array
+        	// display for edit status
+        	$serviceStatus = new StatusService($this->getEntityManager());
+        	$userReport = $serviceStatus->getUserReport($this->_session->userId,null,null,$statusId);
+        	foreach ($userReport as $report){
+        		foreach ($report as $key => $eachStatus){
+        			if($key == 'report'){
+	        			foreach ($eachStatus as $statusDescription){
+	        				$data = (array)$statusDescription;
+	        				list($abbr, $tktNo) = explode("-",$statusDescription->jiraTicketId);
+	        				$data['ticketType']= array_search($abbr, $teamAbbrArr);
+	        				$data['ticketNumber'] = $tktNo;
+	        				$statusForm->populateValues($data);
+	        			}
+        			}
+        		}
+        	}
+
         }
         return new ViewModel(array('statusForm'=>$statusForm));
     }
@@ -72,6 +104,13 @@ class StatusController extends BaseController{
     		$userReport = $serviceStatus->getUserReport($userId);echo "<pre>";print_r($userReport);exit;
     	}
     	return new JsonModel(array('userReport'=>$userReport));
+    }
+
+    public function deletestatusAction(){
+    	$statusId = $this->getRequest()->getQuery('statusId');
+    	$serviceStatus = new StatusService($this->getEntityManager());
+    	$serviceStatus->deleteStatus($statusId);
+    	$this->redirect()->toUrl('/management/status/report');
     }
 
 }
